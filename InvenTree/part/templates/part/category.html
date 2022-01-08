@@ -229,8 +229,8 @@
     loadParametricPartTable(
         "#parametric-part-table",
         { 
-            headers: {{ headers|safe }},
-            data: {{ parameters|safe }},
+            parameters: {{ parameterHeader|safe }},
+            data: {{ parameterData|safe }},
         }
     );
 

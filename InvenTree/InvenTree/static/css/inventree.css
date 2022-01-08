@@ -406,6 +406,10 @@ main {
     padding-right: 5px;
 }
 
+.table-cell-edited {
+  background-image: linear-gradient(225deg, red, red 10px, transparent 10px, transparent);
+}
+
 /* grid display for part images */
 
 .table-img-grid tr {

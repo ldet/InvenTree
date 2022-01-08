@@ -1046,50 +1046,69 @@ function loadParametricPartTable(table, options={}) {
      *  - table_data: Parameters data
      */
 
-    var table_headers = options.headers;
+    var table_parameters = options.parameters;
     var table_data = options.data;
 
     var columns = [];
 
-    for (var header of table_headers) {
-        if (header === 'part') {
-            columns.push({
-                field: header,
-                title: '{% trans "Part" %}',
-                sortable: true,
-                sortName: 'name',
-                formatter: function(value, row) {
+    for (var parameter of table_parameters) {
+        if (parameter.pk === undefined) {
+            if (parameter.name === 'part') {
+                columns.push({
+                    field: parameter.name,
+                    title: '{% trans "Part" %}',
+                    sortable: true,
+                    sortName: 'name',
+                    formatter: function(value, row) {
 
-                    var name = '';
+                        var name = '';
 
-                    if (row.IPN) {
-                        name += row.IPN + ' | ' + row.name;
-                    } else {
-                        name += row.name;
+                        if (row.IPN) {
+                            name += row.IPN + ' | ' + row.name;
+                        } else {
+                            name += row.name;
+                        }
+
+                        return renderLink(name, '/part/' + row.pk + '/'); 
                     }
-
-                    return renderLink(name, '/part/' + row.pk + '/'); 
-                }
-            });
-        } else if (header === 'description') {
-            columns.push({
-                field: header,
-                title: '{% trans "Description" %}',
-                sortable: true,
-            });
+                });
+            } else if (parameter.name === 'description') {
+                columns.push({
+                    field: parameter.name,
+                    title: '{% trans "Description" %}',
+                    sortable: true,
+                });
+            }
         } else {
             columns.push({
-                field: header,
-                title: header,
+                field: parameter.pk.toString(),
+                title: parameter.name,
                 sortable: true,
                 filterControl: 'input',
+                searchFormatter: false,
+                formatter: function unitFormatter(unit) {
+                    return function(value, row, index, element) {
+                        html_unit = ""
+                        html_value = "-"
+                        if (unit !== undefined) {
+                            html_unit = " " + unit
+                        }
+                        if (value !== undefined) {
+                            html_value = value
+                        }
+                        return '<span class="part-parameter-table-value" data-part="'+row.pk+'" data-parameter="'+element+'" data-edited="false" contenteditable="false">'+html_value+'</span>'+html_unit
+                    }
+                }(parameter.units)
+
             });
         }
     }
 
     $(table).inventreeTable({
         sortName: 'part',
-        queryParams: table_headers,
+        queryParams: table_parameters.map(function(parameter) {
+            return parameter.pk === undefined ? parameter.name : parameter.pk.toString()
+        }),
         groupBy: false,
         name: options.name || 'parametric',
         formatNoMatches: function() {
@@ -1099,7 +1118,128 @@ function loadParametricPartTable(table, options={}) {
         showColumns: true,
         data: table_data,
         filterControl: true,
+        buttons: 
+        [
+            {
+                text: '{% trans "Edit" %}',
+                icon: 'fa-edit',
+                event: function (event) {
+                    var edit_enabled = $('.part-parameter-table-value').attr("contenteditable") == "true"
+                    $('.part-parameter-table-value').attr("contenteditable", edit_enabled ? "false" : "true")
+                    $('#btn-table-edit').attr("aria-pressed", edit_enabled ? "false" : "true")
+                    $('#btn-table-edit').toggleClass("active")
+                    $('#btn-table-edit').get(0).style.color = edit_enabled ? null : "green"
+
+                },
+                attributes: {
+                    title: '{% trans "Edit Parameters" %}',
+                    id: "btn-table-edit",
+                    "aria-pressed": "false",
+                }
+            }
+        ],
+        onPostBody: function() {
+            $('.part-parameter-table-value').parent().on('click', function(e) {
+                $(this).children().focus()
+            })
+            $('.part-parameter-table-value').on('input', function(e) {
+                $(this).parent().addClass("table-cell-edited")
+                $(this).attr("data-edited", "true")
+            })
+
+            $('.part-parameter-table-value').on('focusout', function(e) {
+                if ($(this).attr("data-edited") == "true") {
+                    $(this).attr("contenteditable", "false")
+                    var cell = this
+                    partSetParameter({
+                        part_pk: parseInt($(this).attr("data-part"),10),
+                        template_pk: parseInt($(this).attr("data-parameter"),10),
+                        new_value: $(this).html(),
+                        success: function() {
+                            $(cell).parent().removeClass("table-cell-edited")
+                            $(cell).attr("data-edited", "false")
+                            $(cell).attr("contenteditable", "true")
+                        },
+                        error: function(){
+                            $(cell).attr("contenteditable", "true")
+                            //TODO: reset Data
+                        }
+
+                    })
+                }
+            })
+        },
     });
+}
+
+/**
+ * Set/Create Prameter on Part
+ * options:
+ *   -  part_pk
+ *   -  template_pl
+ *   -  new_value
+ *   -  success
+ *   -  error
+ */
+function partSetParameter(options) {
+
+    //First we need to check if the parameter already exists and find the id for it
+    inventreeGet(
+        "/api/part/parameter/.*",
+        {
+            part: options.part_pk,
+            template: options.template_pk,
+        },
+        {
+            success: function(response) {
+                if (Array.isArray(response) && response.length){
+                    //Parameter already exists and needs to be patched
+                    inventreePut(
+                        `/api/part/parameter/${response[0].pk}/`,
+                        {
+                            data: options.new_value,
+                        },
+                        {
+                            method: 'PATCH',
+                            success: options.success,
+                            error: function(xhr, ajaxOptions, thrownError) {
+                                console.error(`Error on PATCH to '/api/part/parameter/${response[0].pk}/' - STATUS ${xhr.status}`);
+                                console.error(thrownError);
+                                showApiError(xhr, `/api/part/parameter/${response[0].pk}/`);
+                                options.error()
+                            }
+                        }
+                    )
+                } else {
+                    //Parameter does not exist and needs to be created
+                    inventreePut(
+                        "/api/part/parameter/.*",
+                        {
+                            part: options.part_pk,
+                            template: options.template_pk,
+                            data: options.new_value,
+                        },
+                        {
+                            method: 'POST',
+                            success: options.success,
+                            error: function(xhr, ajaxOptions, thrownError) {
+                                console.error(`Error on POST to '/api/part/parameter/.*' - STATUS ${xhr.status}`);
+                                console.error(thrownError);
+                                showApiError(xhr, "/api/part/parameter/.*");
+                                options.error()
+                            }
+                        },
+                    )
+                }
+            },
+            error: function(e) {
+                console.error(`Error on GET to '/api/part/parameter/.*' - STATUS ${e.xhr.status}`);
+                showApiError(e.xhr, "/api/part/parameter/.*");
+                options.error()
+            }
+        }
+    )
+
 }
 
 

@@ -69,7 +69,8 @@ function inventreeGet(url, filters={}, options={}) {
 
             if (options.error) {
                 options.error({
-                    error: thrownError
+                    error: thrownError,
+                    xhr: xhr
                 });
             } else {
                 showApiError(xhr, url);

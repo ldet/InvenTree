@@ -1359,15 +1359,15 @@ class CategoryDetail(InvenTreeRoleMixin, DetailView):
             parts_parameters = category.prefetch_parts_parameters(cascade=cascade)
 
             # Get table headers (unique parameters names)
-            context['headers'] = category.get_unique_parameters(cascade=cascade,
+            context['parameterHeader'] = category.get_unique_parameters(cascade=cascade,
                                                                 prefetch=parts_parameters)
 
             # Insert part information
-            context['headers'].insert(0, 'description')
-            context['headers'].insert(0, 'part')
+            context['parameterHeader'].insert(0, {'name':'description'})
+            context['parameterHeader'].insert(0, {'name':'part'})
 
             # Get parameters data
-            context['parameters'] = category.get_parts_parameters(cascade=cascade,
+            context['parameterData'] = category.get_parts_parameters(cascade=cascade,
                                                                   prefetch=parts_parameters)
 
             # Insert "starred" information

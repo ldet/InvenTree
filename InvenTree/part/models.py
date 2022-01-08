@@ -137,9 +137,10 @@ class PartCategory(InvenTreeTree):
         return self.get_parts(cascade=cascade).prefetch_related('parameters', 'parameters__template').all()
 
     def get_unique_parameters(self, cascade=True, prefetch=None):
-        """ Get all unique parameter names for all parts from this category """
+        """ Get all unique parameter names and units for all parts from this category """
 
         unique_parameters_names = []
+        unique_parameters = []
 
         if prefetch:
             parts = prefetch
@@ -151,11 +152,18 @@ class PartCategory(InvenTreeTree):
                 parameter_name = parameter.template.name
                 if parameter_name not in unique_parameters_names:
                     unique_parameters_names.append(parameter_name)
+                    unique_parameter = {
+                        'pk': parameter.template.pk,
+                        'name': parameter.template.name,
+                    }
+                    if parameter.template.units:
+                        unique_parameter['units'] = parameter.template.units
+                    unique_parameters.append(unique_parameter)
 
-        return sorted(unique_parameters_names)
+        return sorted(unique_parameters, key = lambda k: k['name'])
 
     def get_parts_parameters(self, cascade=True, prefetch=None):
-        """ Get all parameter names and values for all parts from this category """
+        """ Get all parameter template pk and values for all parts from this category """
 
         category_parameters = []
 
@@ -175,9 +183,7 @@ class PartCategory(InvenTreeTree):
                 part_parameters['IPN'] = part.IPN
 
             for parameter in part.parameters.all():
-                parameter_name = parameter.template.name
-                parameter_value = parameter.data
-                part_parameters[parameter_name] = parameter_value
+                part_parameters[parameter.template.pk] = parameter.data
 
             category_parameters.append(part_parameters)
 
