@@ -1088,16 +1088,16 @@ function loadParametricPartTable(table, options={}) {
                 searchFormatter: false,
                 formatter: function unitFormatter(unit) {
                     return function(value, row, index, element) {
-                        html_unit = ""
-                        html_value = "-"
+                        html_unit = '';
+                        html_value = '-';
                         if (unit !== undefined) {
-                            html_unit = " " + unit
+                            html_unit = ' ' + unit;
                         }
                         if (value !== undefined) {
-                            html_value = value
+                            html_value = value;
                         }
-                        return '<span class="part-parameter-table-value" data-part="'+row.pk+'" data-parameter="'+element+'" data-edited="false" contenteditable="false">'+html_value+'</span>'+html_unit
-                    }
+                        return '<span class="part-parameter-table-value" data-part="'+row.pk+'" data-parameter="'+element+'" data-edited="false" contenteditable="false">'+html_value+'</span>'+html_unit;
+                    };
                 }(parameter.units)
 
             });
@@ -1107,7 +1107,7 @@ function loadParametricPartTable(table, options={}) {
     $(table).inventreeTable({
         sortName: 'part',
         queryParams: table_parameters.map(function(parameter) {
-            return parameter.pk === undefined ? parameter.name : parameter.pk.toString()
+            return parameter.pk === undefined ? parameter.name : parameter.pk.toString();
         }),
         groupBy: false,
         name: options.name || 'parametric',
@@ -1123,51 +1123,51 @@ function loadParametricPartTable(table, options={}) {
             {
                 text: '{% trans "Edit" %}',
                 icon: 'fa-edit',
-                event: function (event) {
-                    var edit_enabled = $('.part-parameter-table-value').attr("contenteditable") == "true"
-                    $('.part-parameter-table-value').attr("contenteditable", edit_enabled ? "false" : "true")
-                    $('#btn-table-edit').attr("aria-pressed", edit_enabled ? "false" : "true")
-                    $('#btn-table-edit').toggleClass("active")
-                    $('#btn-table-edit').get(0).style.color = edit_enabled ? null : "green"
+                event: function(event) {
+                    var edit_enabled = $('.part-parameter-table-value').attr('contenteditable') == 'true';
+                    $('.part-parameter-table-value').attr('contenteditable', edit_enabled ? 'false' : 'true');
+                    $('#btn-table-edit').attr('aria-pressed', edit_enabled ? 'false' : 'true');
+                    $('#btn-table-edit').toggleClass('active');
+                    $('#btn-table-edit').get(0).style.color = edit_enabled ? null : 'green';
 
                 },
                 attributes: {
-                    title: '{% trans "Edit Parameters" %}',
-                    id: "btn-table-edit",
-                    "aria-pressed": "false",
+                    'title': '{% trans "Edit Parameters" %}',
+                    'id': 'btn-table-edit',
+                    'aria-pressed': 'false',
                 }
             }
         ],
         onPostBody: function() {
             $('.part-parameter-table-value').parent().on('click', function(e) {
-                $(this).children().focus()
-            })
+                $(this).children().focus();
+            });
             $('.part-parameter-table-value').on('input', function(e) {
-                $(this).parent().addClass("table-cell-edited")
-                $(this).attr("data-edited", "true")
-            })
+                $(this).parent().addClass('table-cell-edited');
+                $(this).attr('data-edited', 'true');
+            });
 
             $('.part-parameter-table-value').on('focusout', function(e) {
-                if ($(this).attr("data-edited") == "true") {
-                    $(this).attr("contenteditable", "false")
-                    var cell = this
+                if ($(this).attr('data-edited') == 'true') {
+                    $(this).attr('contenteditable', 'false');
+                    var cell = this;
                     partSetParameter({
-                        part_pk: parseInt($(this).attr("data-part"),10),
-                        template_pk: parseInt($(this).attr("data-parameter"),10),
+                        part_pk: parseInt($(this).attr('data-part'), 10),
+                        template_pk: parseInt($(this).attr('data-parameter'), 10),
                         new_value: $(this).html(),
                         success: function() {
-                            $(cell).parent().removeClass("table-cell-edited")
-                            $(cell).attr("data-edited", "false")
-                            $(cell).attr("contenteditable", "true")
+                            $(cell).parent().removeClass('table-cell-edited');
+                            $(cell).attr('data-edited', 'false');
+                            $(cell).attr('contenteditable', 'true');
                         },
-                        error: function(){
-                            $(cell).attr("contenteditable", "true")
-                            //TODO: reset Data
+                        error: function() {
+                            $(cell).attr('contenteditable', 'true');
+                            // TODO: reset Data
                         }
 
-                    })
+                    });
                 }
-            })
+            });
         },
     });
 }
@@ -1183,17 +1183,17 @@ function loadParametricPartTable(table, options={}) {
  */
 function partSetParameter(options) {
 
-    //First we need to check if the parameter already exists and find the id for it
+    // First we need to check if the parameter already exists and find the id for it
     inventreeGet(
-        "/api/part/parameter/.*",
+        `/api/part/parameter/.*`,
         {
             part: options.part_pk,
             template: options.template_pk,
         },
         {
             success: function(response) {
-                if (Array.isArray(response) && response.length){
-                    //Parameter already exists and needs to be patched
+                if (Array.isArray(response) && response.length) {
+                    // Parameter already exists and needs to be patched
                     inventreePut(
                         `/api/part/parameter/${response[0].pk}/`,
                         {
@@ -1206,14 +1206,14 @@ function partSetParameter(options) {
                                 console.error(`Error on PATCH to '/api/part/parameter/${response[0].pk}/' - STATUS ${xhr.status}`);
                                 console.error(thrownError);
                                 showApiError(xhr, `/api/part/parameter/${response[0].pk}/`);
-                                options.error()
+                                options.error();
                             }
                         }
-                    )
+                    );
                 } else {
-                    //Parameter does not exist and needs to be created
+                    // Parameter does not exist and needs to be created
                     inventreePut(
-                        "/api/part/parameter/.*",
+                        `/api/part/parameter/.*`,
                         {
                             part: options.part_pk,
                             template: options.template_pk,
@@ -1225,20 +1225,20 @@ function partSetParameter(options) {
                             error: function(xhr, ajaxOptions, thrownError) {
                                 console.error(`Error on POST to '/api/part/parameter/.*' - STATUS ${xhr.status}`);
                                 console.error(thrownError);
-                                showApiError(xhr, "/api/part/parameter/.*");
-                                options.error()
+                                showApiError(xhr, `/api/part/parameter/.*`);
+                                options.error();
                             }
                         },
-                    )
+                    );
                 }
             },
             error: function(e) {
                 console.error(`Error on GET to '/api/part/parameter/.*' - STATUS ${e.xhr.status}`);
-                showApiError(e.xhr, "/api/part/parameter/.*");
-                options.error()
+                showApiError(e.xhr, `/api/part/parameter/.*`);
+                options.error();
             }
         }
-    )
+    );
 
 }
 
