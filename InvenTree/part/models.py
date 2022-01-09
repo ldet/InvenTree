@@ -160,7 +160,7 @@ class PartCategory(InvenTreeTree):
                         unique_parameter['units'] = parameter.template.units
                     unique_parameters.append(unique_parameter)
 
-        return sorted(unique_parameters, key = lambda k: k['name'])
+        return sorted(unique_parameters, key=lambda k: k['name'])
 
     def get_parts_parameters(self, cascade=True, prefetch=None):
         """ Get all parameter template pk and values for all parts from this category """
